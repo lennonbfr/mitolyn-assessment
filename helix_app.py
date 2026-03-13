@@ -74,7 +74,7 @@ def generate_pdf(
     c.drawString(100, start_y_analysis, "3. Mitochondrial Pattern Analysis")
 
     p = Paragraph(description, body_style)
-    w, h = p.wrap(400, 200)
+    _, h = p.wrap(400, 200)
     p.drawOn(c, 120, start_y_analysis - h - 10)
 
     # 4. Key Indicators
@@ -124,7 +124,14 @@ def main() -> None:
 
         if st.button("Start Assessment"):
             # Reset session data to avoid leaking previous run info
-            for key in ["lead_logged", "user_name", "user_email", "final_data", "answers"]:
+            for key in [
+                "lead_logged",
+                "user_name",
+                "user_email",
+                "final_data",
+                "answers",
+                "pdf_unlocked",
+            ]:
                 st.session_state.pop(key, None)
 
             st.session_state.user_age = age
@@ -278,23 +285,34 @@ def main() -> None:
                 answers=st.session_state.answers,
             )
 
-            st.download_button(
+            downloaded = st.download_button(
                 label=f"📩 DOWNLOAD {name.upper()}'S REPORT (PDF)",
                 data=pdf_buf,
                 file_name=f"{name}_Helix_Report.pdf",
                 mime="application/pdf",
-                on_click=lambda: log_event("pdf_downloaded", email),
             )
 
-        st.write("---")
-        st.subheader("💡 Urgent Recommendation")
-        st.write(
-            "Based on your cellular profile, you should watch this short presentation "
-            "to understand the nutrient protocol many are using to support metabolic function."
-        )
+            if downloaded:
+                log_event("pdf_downloaded", email)
+                st.session_state.pdf_unlocked = True
+                st.success("Your report is ready. You can now continue to the presentation.")
 
-        if st.link_button("WATCH PRESENTATION NOW", AFFILIATE_LINK, type="primary"):
-            log_event("affiliate_click", "mitolyn_cta")
+            if st.session_state.get("pdf_unlocked"):
+                st.write("---")
+                st.subheader("💡 Urgent Recommendation")
+                st.write(
+                    "Based on your cellular profile, you should watch this short presentation "
+                    "to understand the nutrient protocol many are using to support metabolic function."
+                )
+
+                if st.button("WATCH PRESENTATION NOW", type="primary"):
+                    log_event("affiliate_click", "mitolyn_cta")
+                    st.markdown(
+                        f'<meta http-equiv="refresh" content="0;URL={AFFILIATE_LINK}">',
+                        unsafe_allow_html=True
+                    )
+        else:
+            st.caption("Enter your name and a valid email to unlock the PDF.")
 
 
 if __name__ == "__main__":
