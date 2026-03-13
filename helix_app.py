@@ -2,7 +2,6 @@ import io
 import time
 
 import streamlit as st
-import streamlit.components.v1 as components
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -129,7 +128,6 @@ def main() -> None:
                 "lead_logged",
                 "lead_ready",
                 "pdf_unlocked",
-                "redirect_now",
                 "user_name",
                 "user_email",
                 "final_data",
@@ -317,19 +315,25 @@ def main() -> None:
                 "to understand the nutrient protocol many are using to support metabolic function."
             )
 
-            if st.button("WATCH PRESENTATION NOW", type="primary"):
-                log_event("affiliate_click", "mitolyn_cta")
-                st.session_state.redirect_now = True
-                st.rerun()
-
-        if st.session_state.get("redirect_now"):
-            components.html(
+            st.markdown(
                 f"""
-                <script>
-                    window.top.location.href = "{AFFILIATE_LINK}";
-                </script>
+                <a href="{AFFILIATE_LINK}" target="_self" style="text-decoration:none;">
+                    <div style="
+                        display:inline-block;
+                        background-color:#ff3b30;
+                        color:white;
+                        padding:12px 22px;
+                        border-radius:10px;
+                        font-weight:700;
+                        text-align:center;
+                        cursor:pointer;
+                        margin-top:8px;
+                    ">
+                        WATCH PRESENTATION NOW
+                    </div>
+                </a>
                 """,
-                height=0,
+                unsafe_allow_html=True
             )
 
 
