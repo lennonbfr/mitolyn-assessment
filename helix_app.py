@@ -305,15 +305,20 @@ def main() -> None:
                     "to understand the nutrient protocol many are using to support metabolic function."
                 )
 
-                if st.button("WATCH PRESENTATION NOW", type="primary"):
-                    log_event("affiliate_click", "mitolyn_cta")
-                    st.markdown(
-                        f'<meta http-equiv="refresh" content="0;URL={AFFILIATE_LINK}">',
-                        unsafe_allow_html=True
-                    )
+               if st.button("WATCH PRESENTATION NOW", type="primary"):
+    log_event("affiliate_click", "mitolyn_cta")
+    st.markdown(
+        f"""
+        <script>
+            window.top.location.href = "{AFFILIATE_LINK}";
+        </script>
+        """,
+        unsafe_allow_html=True
+    )
         else:
             st.caption("Enter your name and a valid email to unlock the PDF.")
 
 
 if __name__ == "__main__":
     main()
+
