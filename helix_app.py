@@ -2,19 +2,20 @@ import streamlit as st
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 import io
+import time
 
 # 1. CONFIGURAÇÃO DA PÁGINA
 st.set_page_config(
-    page_title="Mitochondrial Assessment | Helix Media Lab",
+    page_title="Cellular Metabolism Assessment | Helix Media Lab",
     page_icon="🧬",
     layout="centered"
 )
 
-# 2. SEU LINK REGISTRADO (CLICKBANK)
+# 2. LINK DE AFILIADO
 AFFILIATE_LINK = "https://47b7dbicrrxvlu7fopsf3l9y5u.hop.clickbank.net/?&campaign=PDF_QUIZ"
 
-# 3. FUNÇÃO DO GERADOR DE PDF
-def generate_pdf(name, age, score, status, description, metabolic_age):
+# 3. GERADOR DE PDF
+def generate_pdf(name, age, score, status, description, metabolic_age, answers):
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=letter)
     
@@ -25,22 +26,19 @@ def generate_pdf(name, age, score, status, description, metabolic_age):
     c.drawString(100, 735, "Confidential Health Assessment Report | USA")
     c.line(100, 730, 500, 730)
 
-    # Score Section
+    # Conteúdo Principal
     c.setFont("Helvetica-Bold", 14)
     c.drawString(100, 690, "1. Cellular Metabolism Score")
     c.setFont("Helvetica", 12)
     c.drawString(120, 670, f"Score: {score}/100")
     c.drawString(120, 650, f"Status: {status}")
 
-    # Metabolic Age Section
     c.setFont("Helvetica-Bold", 14)
     c.drawString(100, 610, "2. Estimated Metabolic Age")
     c.setFont("Helvetica", 12)
     c.drawString(120, 590, f"Chronological Age: {age}")
-    c.setFont("Helvetica-Bold", 13)
     c.drawString(120, 570, f"Estimated Cellular Age: {metabolic_age} years old")
 
-    # Pattern Analysis
     c.setFont("Helvetica-Bold", 14)
     c.drawString(100, 530, "3. Mitochondrial Pattern Analysis")
     c.setFont("Helvetica", 11)
@@ -49,11 +47,20 @@ def generate_pdf(name, age, score, status, description, metabolic_age):
     text_object.textLines(description)
     c.drawText(text_object)
 
-    # CTA Footer
-    c.line(100, 440, 500, 440)
-    c.setFont("Helvetica-Oblique", 11)
-    c.drawString(100, 420, "To reactivate your cellular energy, refer to the recommended nutrient protocol.")
-    
+    # Key Indicators
+    energy_marker = "Stable" if answers["q1"] == "Energized" else "Reduced Output"
+    weight_marker = "Optimal" if answers["q4"] == "No" else "Elevated Resistance"
+    brain_marker = "Clear" if answers["q5"] == "Rarely" else "Reduced Clarity"
+
+    c.setFont("Helvetica-Bold", 14)
+    c.drawString(100, 440, "4. Key Indicators")
+    c.setFont("Helvetica", 11)
+    c.drawString(120, 420, f"Morning Energy Stability: {energy_marker}")
+    c.drawString(120, 405, f"Weight Resistance Marker: {weight_marker}")
+    c.drawString(120, 390, f"Cognitive Clarity Marker: {brain_marker}")
+
+    # Footer
+    c.line(100, 340, 500, 340)
     c.setFont("Helvetica", 8)
     c.drawCentredString(300, 50, "© 2026 Helix Media Lab. For informational purposes only. This is not medical advice.")
     
@@ -61,33 +68,36 @@ def generate_pdf(name, age, score, status, description, metabolic_age):
     buffer.seek(0)
     return buffer
 
-# 4. INTERFACE DO APP (STREAMLIT)
+# 4. TRACKING LOG
+def log_event(event_name, detail=""):
+    print(f"[TRACKING] {event_name.upper()} | {detail}")
+
+# 5. APP INTERFACE
 def main():
-    st.title("🧬 Mitochondrial Health Assessment")
+    st.title("🧬 Cellular Metabolism Assessment")
     st.write("---")
 
     if 'step' not in st.session_state:
         st.session_state.step = 1
 
-    # PASSO 1: CAPTURA DE DADOS
+    # STEP 1: IDADE (Com Limpeza de Sessão Sugerida pela Eva)
     if st.session_state.step == 1:
-        st.subheader("Personal Information")
-        name = st.text_input("First Name:", placeholder="Enter your name")
+        st.subheader("Start your assessment")
         age = st.number_input("Current Age:", min_value=18, max_value=100, value=40)
         
         if st.button("Start Assessment"):
-            if name:
-                st.session_state.user_name = name
-                st.session_state.user_age = age
-                st.session_state.step = 2
-                st.rerun()
-            else:
-                st.error("Please provide your name.")
+            # Limpeza cirúrgica para evitar vazamento de dados de sessões anteriores
+            for key in ["lead_logged", "user_name", "user_email", "final_data", "answers"]:
+                st.session_state.pop(key, None)
+            
+            st.session_state.user_age = age
+            log_event("quiz_started", f"age={age}")
+            st.session_state.step = 2
+            st.rerun()
 
-    # PASSO 2: O QUIZ
+    # STEP 2: QUIZ
     elif st.session_state.step == 2:
-        st.subheader(f"Analyzing Cellular Energy for {st.session_state.user_name}")
-        
+        st.subheader("Mitochondrial Pattern Screening")
         q1 = st.radio("1. How do you usually feel within 30 mins of waking up?", ["Energized", "A little slow", "Tired and unmotivated"], index=None)
         q2 = st.radio("2. Do you often experience an energy crash in the afternoon?", ["Rarely", "Sometimes", "Almost every day"], index=None)
         q3 = st.radio("3. Do you tend to feel colder than other people around you?", ["No", "Sometimes", "Yes, often"], index=None)
@@ -96,65 +106,70 @@ def main():
 
         if st.button("Generate My Report"):
             if all([q1, q2, q3, q4, q5]):
-                # Lógica de Pontuação (Peso 1 a 3)
-                mapping = {"Energized": 3, "A little slow": 2, "Tired and unmotivated": 1,
-                           "Rarely": 3, "Sometimes": 2, "Almost every day": 1, "Frequently": 1,
-                           "No": 3, "Yes, often": 1, "Yes, consistently": 1}
+                mapping = {"Energized": 3, "A little slow": 2, "Tired and unmotivated": 0, "Rarely": 3, "Sometimes": 1, "Almost every day": 0, "Frequently": 0, "No": 3, "Yes, often": 0, "Yes, consistently": 0}
+                total_pts = sum([mapping.get(q, 1) for q in [q1, q2, q3, q4, q5]])
+                score = int((total_pts / 15) * 90)
                 
-                total_pts = sum([mapping.get(q, 2) for q in [q1, q2, q3, q4, q5]])
-                score = int((total_pts / 15) * 100)
+                st.session_state.answers = {"q1": q1, "q2": q2, "q3": q3, "q4": q4, "q5": q5}
                 
-                # Classificação e Idade Metabólica
-                if score <= 45:
-                    status = "Cellular Energy Deficit"
-                    metabolic_age = st.session_state.user_age + 10
-                    desc = "Your cells indicate a significant slowdown in mitochondrial energy output.\nThis state often forces the body to store fat for survival."
-                elif score <= 75:
-                    status = "Sluggish Metabolic Function"
-                    metabolic_age = st.session_state.user_age + 4
-                    desc = "Your results suggest signs of reduced cellular energy efficiency.\nYour metabolism is functioning below its natural potential."
+                if score <= 40:
+                    status, age_plus = "Cellular Energy Deficit", 12
+                    desc = "Your results suggest a pronounced reduction in cellular energy efficiency. This pattern is often associated with slower metabolic activity and reduced fat-burning responsiveness."
+                elif score <= 70:
+                    status, age_plus = "Sluggish Metabolic Function", 6
+                    desc = "Your answers indicate signs of reduced mitochondrial output. Your metabolism may currently be working below its ideal cellular potential."
                 else:
-                    status = "Balanced Cellular Output"
-                    metabolic_age = st.session_state.user_age - 1
-                    desc = "Your cellular energy levels appear stable.\nOptimization is recommended to maintain peak fat-burning speed."
+                    status, age_plus = "Balanced Cellular Output", 2
+                    desc = "Your cellular energy profile appears relatively stable, although there may still be room to improve metabolic efficiency and long-term energy balance."
 
-                st.session_state.final_data = {
-                    "score": score, "status": status, "desc": desc, "met_age": metabolic_age
-                }
+                st.session_state.final_data = {"score": score, "status": status, "desc": desc, "met_age": st.session_state.user_age + age_plus}
+                log_event("quiz_completed", f"score={score}|status={status}") # Log melhorado
                 st.session_state.step = 3
                 st.rerun()
             else:
                 st.warning("Please answer all questions.")
 
-    # PASSO 3: RESULTADOS E DOWNLOAD
+    # STEP 3: ANALYZING
     elif st.session_state.step == 3:
+        st.subheader("Analyzing your cellular metabolism...")
+        with st.status("Scanning mitochondrial markers...", expanded=True) as s:
+            time.sleep(1.2)
+            s.update(label="Matching age-related energy patterns...", state="running")
+            time.sleep(1.2)
+            s.update(label="Assessment complete.", state="complete")
+        st.session_state.step = 4
+        st.rerun()
+
+    # STEP 4: RESULTADO + LEAD + CTA
+    elif st.session_state.step == 4:
         data = st.session_state.final_data
-        st.success("✅ Your Assessment is Complete!")
+        st.warning("Your results suggest that reduced cellular energy may be affecting how efficiently your body burns fuel.")
         
         col1, col2 = st.columns(2)
         col1.metric("Cellular Score", f"{data['score']}/100")
         col2.metric("Metabolic Age", f"{data['met_age']} yrs")
+        st.info(f"**Summary:** {data['desc']}")
 
-        st.info(f"**Analysis:** {data['desc']}")
+        st.write("---")
+        st.subheader("📩 Unlock your full PDF report")
+        st.caption("Enter your details to unlock your personalized PDF report instantly.") # UX Caption
+        name = st.text_input("First Name:")
+        email = st.text_input("Email Address:")
 
-        # Download do PDF
-        pdf_buf = generate_pdf(
-            st.session_state.user_name, st.session_state.user_age,
-            data['score'], data['status'], data['desc'], data['met_age']
-        )
-        
-        st.download_button(
-            label="📩 DOWNLOAD YOUR DETAILED REPORT (PDF)",
-            data=pdf_buf,
-            file_name=f"Helix_Metabolic_Report.pdf",
-            mime="application/pdf"
-        )
+        if name and "@" in email:
+            st.session_state.user_name, st.session_state.user_email = name, email
+            if "lead_logged" not in st.session_state:
+                log_event("lead_captured", f"email={email}")
+                st.session_state.lead_logged = True
+            
+            pdf_buf = generate_pdf(name, st.session_state.user_age, data['score'], data['status'], data['desc'], data['met_age'], st.session_state.answers)
+            st.download_button(label=f"📩 DOWNLOAD {name.upper()}'S REPORT (PDF)", data=pdf_buf, file_name=f"{name}_Helix_Report.pdf", mime="application/pdf", on_click=lambda: log_event("pdf_downloaded", email))
 
         st.write("---")
         st.subheader("💡 Urgent Recommendation")
-        st.write("Based on your mitochondrial pattern, you should watch this clinical presentation on how to reactivate your cellular engines.")
-        
-        st.link_button("WATCH PRESENTATION NOW", AFFILIATE_LINK, type="primary")
+        st.write("Based on your cellular profile, you should watch this short presentation to understand the nutrient protocol many are using to support metabolic function.")
+        if st.link_button("WATCH PRESENTATION NOW", AFFILIATE_LINK, type="primary"):
+            log_event("affiliate_click", "mitolyn_cta")
 
 if __name__ == "__main__":
     main()
