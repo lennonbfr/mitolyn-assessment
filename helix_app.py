@@ -247,93 +247,85 @@ def main() -> None:
         st.rerun()
 
     # STEP 4: RESULT + LEAD + PDF + CTA
-    elif st.session_state.step == 4:
-        data = st.session_state.final_data
+elif st.session_state.step == 4:
+    data = st.session_state.final_data
 
-        st.warning(
-            "Your results suggest that reduced cellular energy may be affecting "
-            "how efficiently your body burns fuel."
+    st.warning(
+        "Your results suggest that reduced cellular energy may be affecting "
+        "how efficiently your body burns fuel."
+    )
+
+    col1, col2 = st.columns(2)
+    col1.metric("Cellular Score", f"{data['score']}/100")
+    col2.metric("Metabolic Age", f"{data['met_age']} yrs")
+
+    st.info(f"**Summary:** {data['desc']}")
+
+    st.write("---")
+    st.subheader("📩 Unlock your full PDF report")
+    st.caption("Enter your details to unlock your personalized PDF report instantly.")
+
+    with st.form("lead_form"):
+        name = st.text_input("First Name:")
+        email = st.text_input("Email Address:")
+        unlock_submitted = st.form_submit_button("UNLOCK REPORT")
+
+    if unlock_submitted:
+        if name and "@" in email:
+            st.session_state.user_name = name
+            st.session_state.user_email = email
+            st.session_state.lead_ready = True
+
+            if "lead_logged" not in st.session_state:
+                log_event("lead_captured", f"email={email}")
+                st.session_state.lead_logged = True
+        else:
+            st.error("Please enter your name and a valid email address.")
+
+    if st.session_state.get("lead_ready"):
+        pdf_buf = generate_pdf(
+            name=st.session_state.user_name,
+            age=st.session_state.user_age,
+            score=data["score"],
+            status=data["status"],
+            description=data["desc"],
+            metabolic_age=data["met_age"],
+            answers=st.session_state.answers,
         )
 
-        col1, col2 = st.columns(2)
-        col1.metric("Cellular Score", f"{data['score']}/100")
-        col2.metric("Metabolic Age", f"{data['met_age']} yrs")
+        st.download_button(
+            label=f"📩 DOWNLOAD {st.session_state.user_name.upper()}'S REPORT (PDF)",
+            data=pdf_buf,
+            file_name=f"{st.session_state.user_name}_Helix_Report.pdf",
+            mime="application/pdf",
+        )
 
-        st.info(f"**Summary:** {data['desc']}")
+        st.success("Your report is ready. You can now continue to the presentation.")
 
         st.write("---")
-        st.subheader("📩 Unlock your full PDF report")
-        st.caption("Enter your details to unlock your personalized PDF report instantly.")
+        st.subheader("💡 Urgent Recommendation")
+        st.write(
+            "Based on your cellular profile, you should watch this short presentation "
+            "to understand the nutrient protocol many are using to support metabolic function."
+        )
 
-        with st.form("lead_form"):
-            name = st.text_input("First Name:")
-            email = st.text_input("Email Address:")
-            unlock_submitted = st.form_submit_button("UNLOCK REPORT")
-
-        if unlock_submitted:
-            if name and "@" in email:
-                st.session_state.user_name = name
-                st.session_state.user_email = email
-                st.session_state.lead_ready = True
-
-                if "lead_logged" not in st.session_state:
-                    log_event("lead_captured", f"email={email}")
-                    st.session_state.lead_logged = True
-            else:
-                st.error("Please enter your name and a valid email address.")
-
-        if st.session_state.get("lead_ready"):
-            pdf_buf = generate_pdf(
-                name=st.session_state.user_name,
-                age=st.session_state.user_age,
-                score=data["score"],
-                status=data["status"],
-                description=data["desc"],
-                metabolic_age=data["met_age"],
-                answers=st.session_state.answers,
-            )
-
-            st.download_button(
-                label=f"📩 DOWNLOAD {st.session_state.user_name.upper()}'S REPORT (PDF)",
-                data=pdf_buf,
-                file_name=f"{st.session_state.user_name}_Helix_Report.pdf",
-                mime="application/pdf",
-                key="download_btn" # Adicionado key para evitar conflitos de rerun
-            )
-
-            # Notificamos o desbloqueio
-            st.session_state.pdf_unlocked = True
-
-        if st.session_state.get("pdf_unlocked"):
-            st.success("Your report is ready. You can now continue to the presentation.")
-
-            st.write("---")
-            st.subheader("💡 Urgent Recommendation")
-            st.write(
-                "Based on your cellular profile, you should watch this short presentation "
-                "to understand the nutrient protocol many are using to support metabolic function."
-            )
-
-            # O AJUSTE CRÍTICO: target="_blank" e rel="noopener noreferrer"
-            st.markdown(
-                f"""
-                <a href="{AFFILIATE_LINK}" target="_blank" rel="noopener noreferrer" style="text-decoration:none;">
-                    <div style="
-                        display:inline-block;
-                        background-color:#ff3b30;
-                        color:white;
-                        padding:16px 32px;
-                        border-radius:12px;
-                        font-weight:700;
-                        font-size:20px;
-                        text-align:center;
-                        cursor:pointer;
-                        margin-top:10px;
-                        box-shadow: 0px 4px 15px rgba(255, 59, 48, 0.3);
-                    ">
-                        WATCH PRESENTATION NOW
-                    </div>
-                </a>
-                """,
-                unsafe_allow_html=True
-            )
+        st.markdown(
+            f"""
+            <a href="{AFFILIATE_LINK}" target="_blank">
+            <button style="
+                background-color:#ff3b30;
+                color:white;
+                border:none;
+                padding:16px 30px;
+                font-size:20px;
+                font-weight:bold;
+                border-radius:10px;
+                cursor:pointer;
+                margin-top:10px;
+            ">
+            WATCH PRESENTATION NOW
+            </button>
+            </a>
+            """,
+            unsafe_allow_html=True
+        )
