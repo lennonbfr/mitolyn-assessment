@@ -316,7 +316,7 @@ def main() -> None:
 
             st.markdown(
                 f"""
-                <a href="{AFFILIATE_LINK}" target="_top" style="text-decoration:none;">
+                <a href="{AFFILIATE_LINK}" target="_blank" rel="noopener noreferrer" style="text-decoration:none;">
                     <div style="
                         display:inline-block;
                         background-color:#ff3b30;
