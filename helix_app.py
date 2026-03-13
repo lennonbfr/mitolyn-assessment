@@ -293,16 +293,16 @@ def main() -> None:
                 answers=st.session_state.answers,
             )
 
-            downloaded = st.download_button(
+            st.download_button(
                 label=f"📩 DOWNLOAD {st.session_state.user_name.upper()}'S REPORT (PDF)",
                 data=pdf_buf,
                 file_name=f"{st.session_state.user_name}_Helix_Report.pdf",
                 mime="application/pdf",
+                key="download_btn" # Adicionado key para evitar conflitos de rerun
             )
 
-            if downloaded:
-                log_event("pdf_downloaded", st.session_state.user_email)
-                st.session_state.pdf_unlocked = True
+            # Notificamos o desbloqueio
+            st.session_state.pdf_unlocked = True
 
         if st.session_state.get("pdf_unlocked"):
             st.success("Your report is ready. You can now continue to the presentation.")
@@ -314,6 +314,7 @@ def main() -> None:
                 "to understand the nutrient protocol many are using to support metabolic function."
             )
 
+            # O AJUSTE CRÍTICO: target="_blank" e rel="noopener noreferrer"
             st.markdown(
                 f"""
                 <a href="{AFFILIATE_LINK}" target="_blank" rel="noopener noreferrer" style="text-decoration:none;">
@@ -321,12 +322,14 @@ def main() -> None:
                         display:inline-block;
                         background-color:#ff3b30;
                         color:white;
-                        padding:12px 22px;
-                        border-radius:10px;
+                        padding:16px 32px;
+                        border-radius:12px;
                         font-weight:700;
+                        font-size:20px;
                         text-align:center;
                         cursor:pointer;
-                        margin-top:8px;
+                        margin-top:10px;
+                        box-shadow: 0px 4px 15px rgba(255, 59, 48, 0.3);
                     ">
                         WATCH PRESENTATION NOW
                     </div>
@@ -334,7 +337,3 @@ def main() -> None:
                 """,
                 unsafe_allow_html=True
             )
-
-
-if __name__ == "__main__":
-    main()
