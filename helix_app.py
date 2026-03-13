@@ -123,7 +123,7 @@ def main() -> None:
         age = st.number_input("Current Age:", min_value=18, max_value=100, value=40)
 
         if st.button("Start Assessment"):
-            # Reset session data to avoid leaking previous run info
+            # Reset session data
             for key in [
                 "lead_logged",
                 "lead_ready",
@@ -265,7 +265,6 @@ def main() -> None:
         st.subheader("📩 Unlock your full PDF report")
         st.caption("Enter your details to unlock your personalized PDF report instantly.")
 
-        # FORM evita o comportamento "Press Enter to apply"
         with st.form("lead_form"):
             name = st.text_input("First Name:")
             email = st.text_input("Email Address:")
@@ -317,7 +316,7 @@ def main() -> None:
 
             st.markdown(
                 f"""
-                <a href="{AFFILIATE_LINK}" target="_self" style="text-decoration:none;">
+                <a href="{AFFILIATE_LINK}" target="_top" style="text-decoration:none;">
                     <div style="
                         display:inline-block;
                         background-color:#ff3b30;
