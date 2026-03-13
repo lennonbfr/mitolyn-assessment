@@ -310,10 +310,11 @@ def main() -> None:
     st.markdown(
         f"""
         <script>
-            window.top.location.href = "{AFFILIATE_LINK}";
+            window.open("{AFFILIATE_LINK}", "_self");
         </script>
         """,
         unsafe_allow_html=True
+        
     )
         else:
             st.caption("Enter your name and a valid email to unlock the PDF.")
@@ -321,4 +322,5 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
 
