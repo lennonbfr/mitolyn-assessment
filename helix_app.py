@@ -2,6 +2,7 @@ import io
 import time
 
 import streamlit as st
+import streamlit.components.v1 as components
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -126,11 +127,13 @@ def main() -> None:
             # Reset session data to avoid leaking previous run info
             for key in [
                 "lead_logged",
+                "lead_ready",
+                "pdf_unlocked",
+                "redirect_now",
                 "user_name",
                 "user_email",
                 "final_data",
                 "answers",
-                "pdf_unlocked",
             ]:
                 st.session_state.pop(key, None)
 
@@ -264,19 +267,27 @@ def main() -> None:
         st.subheader("📩 Unlock your full PDF report")
         st.caption("Enter your details to unlock your personalized PDF report instantly.")
 
-        name = st.text_input("First Name:")
-        email = st.text_input("Email Address:")
+        # FORM evita o comportamento "Press Enter to apply"
+        with st.form("lead_form"):
+            name = st.text_input("First Name:")
+            email = st.text_input("Email Address:")
+            unlock_submitted = st.form_submit_button("UNLOCK REPORT")
 
-        if name and "@" in email:
-            st.session_state.user_name = name
-            st.session_state.user_email = email
+        if unlock_submitted:
+            if name and "@" in email:
+                st.session_state.user_name = name
+                st.session_state.user_email = email
+                st.session_state.lead_ready = True
 
-            if "lead_logged" not in st.session_state:
-                log_event("lead_captured", f"email={email}")
-                st.session_state.lead_logged = True
+                if "lead_logged" not in st.session_state:
+                    log_event("lead_captured", f"email={email}")
+                    st.session_state.lead_logged = True
+            else:
+                st.error("Please enter your name and a valid email address.")
 
+        if st.session_state.get("lead_ready"):
             pdf_buf = generate_pdf(
-                name=name,
+                name=st.session_state.user_name,
                 age=st.session_state.user_age,
                 score=data["score"],
                 status=data["status"],
@@ -286,41 +297,41 @@ def main() -> None:
             )
 
             downloaded = st.download_button(
-                label=f"📩 DOWNLOAD {name.upper()}'S REPORT (PDF)",
+                label=f"📩 DOWNLOAD {st.session_state.user_name.upper()}'S REPORT (PDF)",
                 data=pdf_buf,
-                file_name=f"{name}_Helix_Report.pdf",
+                file_name=f"{st.session_state.user_name}_Helix_Report.pdf",
                 mime="application/pdf",
             )
 
             if downloaded:
-                log_event("pdf_downloaded", email)
+                log_event("pdf_downloaded", st.session_state.user_email)
                 st.session_state.pdf_unlocked = True
-                st.success("Your report is ready. You can now continue to the presentation.")
 
-            if st.session_state.get("pdf_unlocked"):
-                st.write("---")
-                st.subheader("💡 Urgent Recommendation")
-                st.write(
-                    "Based on your cellular profile, you should watch this short presentation "
-                    "to understand the nutrient protocol many are using to support metabolic function."
-                )
+        if st.session_state.get("pdf_unlocked"):
+            st.success("Your report is ready. You can now continue to the presentation.")
 
-               if st.button("WATCH PRESENTATION NOW", type="primary"):
-    log_event("affiliate_click", "mitolyn_cta")
-    st.markdown(
-        f"""
-        <script>
-            window.open("{AFFILIATE_LINK}", "_self");
-        </script>
-        """,
-        unsafe_allow_html=True
-        
-    )
-        else:
-            st.caption("Enter your name and a valid email to unlock the PDF.")
+            st.write("---")
+            st.subheader("💡 Urgent Recommendation")
+            st.write(
+                "Based on your cellular profile, you should watch this short presentation "
+                "to understand the nutrient protocol many are using to support metabolic function."
+            )
+
+            if st.button("WATCH PRESENTATION NOW", type="primary"):
+                log_event("affiliate_click", "mitolyn_cta")
+                st.session_state.redirect_now = True
+                st.rerun()
+
+        if st.session_state.get("redirect_now"):
+            components.html(
+                f"""
+                <script>
+                    window.top.location.href = "{AFFILIATE_LINK}";
+                </script>
+                """,
+                height=0,
+            )
 
 
 if __name__ == "__main__":
     main()
-
-
